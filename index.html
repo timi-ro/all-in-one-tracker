@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly All-in-One Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #faf8fc 0%, #f3f0f7 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 4px 24px rgba(155, 138, 165, 0.15);
+            border: 3px solid #d4c5e2;
+            padding: 40px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 300;
+            font-style: italic;
+            color: #6b5b7a;
+            letter-spacing: 1px;
+        }
+        
+        .header .month {
+            font-size: 1rem;
+            color: #9b8aa5;
+            margin-top: 8px;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: #6b5b7a;
+        }
+        
+        .legend-line {
+            width: 24px;
+            height: 3px;
+            border-radius: 2px;
+        }
+        
+        .legend-line.study { background: #9b8aa5; }
+        .legend-line.stress { background: #e8a87c; }
+        .legend-line.sleep { background: #7eb8da; }
+        .legend-line.mood { background: #85c88a; }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 50px;
+            padding: 20px;
+            background: linear-gradient(180deg, #fdfcfe 0%, #f9f7fb 100%);
+            border-radius: 16px;
+            border: 1px solid #e8e0f0;
+        }
+        
+        .section-title {
+            font-size: 1.1rem;
+            font-style: italic;
+            color: #6b5b7a;
+            margin-bottom: 20px;
+        }
+        
+        .habits-container {
+            margin-top: 40px;
+        }
+        
+        .habits-grid {
+            display: grid;
+            grid-template-columns: 120px repeat(31, 1fr);
+            gap: 2px;
+            font-size: 0.7rem;
+            overflow-x: auto;
+        }
+        
+        .habit-label {
+            padding: 8px 4px;
+            color: #6b5b7a;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+        }
+        
+        .day-header {
+            text-align: center;
+            padding: 6px 2px;
+            color: #9b8aa5;
+            font-weight: 500;
+            font-size: 0.65rem;
+        }
+        
+        .habit-cell {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 4px;
+        }
+        
+        .circle {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid #d4c5e2;
+            background: white;
+            transition: all 0.2s;
+        }
+        
+        .circle.filled {
+            background: linear-gradient(135deg, #9b8aa5 0%, #7eb8da 50%, #85c88a 100%);
+            border-color: transparent;
+        }
+        
+        .circle.filled.purple { background: #9b8aa5; }
+        .circle.filled.blue { background: #7eb8da; }
+        .circle.filled.green { background: #85c88a; }
+        .circle.filled.orange { background: #e8a87c; }
+        
+        .summary-section {
+            margin-top: 50px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+        
+        .summary-card {
+            background: linear-gradient(135deg, #fdfcfe 0%, #f5f2f8 100%);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #e8e0f0;
+        }
+        
+        .summary-card .value {
+            font-size: 2rem;
+            font-weight: 300;
+            margin-bottom: 4px;
+        }
+        
+        .summary-card .label {
+            font-size: 0.8rem;
+            color: #9b8aa5;
+        }
+        
+        .summary-card.study .value { color: #9b8aa5; }
+        .summary-card.stress .value { color: #e8a87c; }
+        .summary-card.sleep .value { color: #7eb8da; }
+        .summary-card.mood .value { color: #85c88a; }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid #e8e0f0;
+            color: #9b8aa5;
+            font-size: 0.85rem;
+        }
+        
+        .footer span {
+            color: #85c88a;
+        }
+
+        @media (max-width: 768px) {
+            .summary-section {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .habits-grid {
+                font-size: 0.6rem;
+            }
+            .circle {
+                width: 12px;
+                height: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Monthly all-in-one tracker</h1>
+            <div class="month">November 2024</div>
+        </div>
+        
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-line study"></div>
+                <span>Study</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line stress"></div>
+                <span>Stress</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line sleep"></div>
+                <span>Sleep</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line mood"></div>
+                <span>Mood</span>
+            </div>
+        </div>
+        
+        <!-- Chart -->
+        <div class="chart-container">
+            <canvas id="metricsChart"></canvas>
+        </div>
+        
+        <!-- Daily Habits -->
+        <div class="habits-container">
+            <div class="section-title">Daily Habits</div>
+            <div class="habits-grid" id="habitsGrid">
+                <!-- Generated by JavaScript -->
+            </div>
+        </div>
+        
+        <!-- Summary Cards -->
+        <div class="summary-section">
+            <div class="summary-card study">
+                <div class="value">5.8</div>
+                <div class="label">Avg Study Hours</div>
+            </div>
+            <div class="summary-card stress">
+                <div class="value">4.2</div>
+                <div class="label">Avg Stress</div>
+            </div>
+            <div class="summary-card sleep">
+                <div class="value">7.1</div>
+                <div class="label">Avg Sleep</div>
+            </div>
+            <div class="summary-card mood">
+                <div class="value">7.4</div>
+                <div class="label">Avg Mood</div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            Happy tracking! May your habits bloom like lavender <span>🌿</span>
+        </div>
+    </div>
+
+    <script>
+        // Sample data for November (30 days)
+        const days = Array.from({length: 30}, (_, i) => i + 1);
+        
+        const sampleData = {
+            study:  [7, 8, 6, 5, 4, 7, 8, 6, 5, 3, 4, 5, 6, 7, 5, 4, 6, 7, 8, 6, 5, 4, 5, 6, 7, 5, 4, 6, 5, 4],
+            stress: [5, 4, 5, 6, 7, 5, 4, 3, 4, 5, 6, 5, 4, 3, 4, 5, 4, 3, 2, 3, 4, 5, 4, 3, 4, 5, 4, 3, 4, 5],
+            sleep:  [7, 6, 8, 7, 6, 7, 8, 7, 6, 5, 6, 7, 8, 7, 6, 7, 8, 7, 8, 7, 6, 7, 8, 7, 6, 7, 8, 7, 8, 7],
+            mood:   [7, 8, 7, 6, 5, 7, 8, 8, 7, 6, 6, 7, 8, 9, 8, 7, 8, 9, 9, 8, 7, 6, 7, 8, 8, 7, 8, 9, 8, 7]
+        };
+
+        // Create line chart
+        const ctx = document.getElementById('metricsChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: days,
+                datasets: [
+                    {
+                        label: 'Study',
+                        data: sampleData.study,
+                        borderColor: '#9b8aa5',
+                        backgroundColor: 'rgba(155, 138, 165, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: false,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#9b8aa5'
+                    },
+                    {
+                        label: 'Stress',
+                        data: sampleData.stress,
+                        borderColor: '#e8a87c',
+                        backgroundColor: 'rgba(232, 168, 124, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: false,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#e8a87c'
+                    },
+                    {
+                        label: 'Sleep',
+                        data: sampleData.sleep,
+                        borderColor: '#7eb8da',
+                        backgroundColor: 'rgba(126, 184, 218, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: false,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#7eb8da'
+                    },
+                    {
+                        label: 'Mood',
+                        data: sampleData.mood,
+                        borderColor: '#85c88a',
+                        backgroundColor: 'rgba(133, 200, 138, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: false,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#85c88a'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 10,
+                        grid: {
+                            color: 'rgba(155, 138, 165, 0.1)'
+                        },
+                        ticks: {
+                            color: '#9b8aa5',
+                            font: { size: 11 }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(155, 138, 165, 0.05)'
+                        },
+                        ticks: {
+                            color: '#9b8aa5',
+                            font: { size: 10 },
+                            maxRotation: 0
+                        }
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                }
+            }
+        });
+
+        // Generate habits grid
+        const habits = [
+            'Meditation',
+            'Reading',
+            'Gym',
+            'Skincare',
+            'Water intake',
+            'Early waking',
+            'Journaling',
+            'Vitamins'
+        ];
+
+        // Sample completion data (1 = done, 0 = not done)
+        const habitData = {
+            'Meditation':   [0,1,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,0,0],
+            'Reading':      [1,0,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,0,0],
+            'Gym':          [1,1,0,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,0,0],
+            'Skincare':     [1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0,0],
+            'Water intake': [0,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,1,0,0],
+            'Early waking': [1,0,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,0,0],
+            'Journaling':   [1,1,0,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,0,0],
+            'Vitamins':     [1,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,1,0,0]
+        };
+
+        const colors = ['purple', 'blue', 'green', 'orange', 'purple', 'blue', 'green', 'orange'];
+
+        const grid = document.getElementById('habitsGrid');
+        
+        // Add header row
+        grid.innerHTML = '<div class="habit-label"></div>';
+        for (let d = 1; d <= 31; d++) {
+            grid.innerHTML += `<div class="day-header">${d}</div>`;
+        }
+        
+        // Add habit rows
+        habits.forEach((habit, idx) => {
+            grid.innerHTML += `<div class="habit-label">${habit}</div>`;
+            for (let d = 0; d < 31; d++) {
+                const filled = d < 30 && habitData[habit][d] === 1;
+                const color = colors[idx];
+                grid.innerHTML += `<div class="habit-cell"><div class="circle ${filled ? 'filled ' + color : ''}"></div></div>`;
+            }
+        });
+    </script>
+</body>
+</html>
